@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sklep internetowy</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .produkt { border: 1px solid #ddd; padding: 15px; margin: 10px; border-radius: 5px; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>🛒 Sklep internetowy</h1>
+    
+    <h2>Produkty</h2>
+    <div id="produkty"></div>
+
+    <h2>Koszyk</h2>
+    <div id="koszyk"></div>
+    <button onclick="pokazKoszyk()">Odśwież koszyk</button>
+    <button onclick="zlozZamowienie()">Złóż zamówienie</button>
+
+    <script>
+        const SESJA_ID = "user";
+
+        async function pobierzProdukty() {
+            const res = await fetch("/produkty/");
+            const produkty = await res.json();
+            const div = document.getElementById("produkty");
+            div.innerHTML = produkty.map(p => `
+                <div class="produkt">
+                    <h3>${p.nazwa}</h3>
+                    <p>Cena: ${p.cena} zł</p>
+                    <p>${p.opis}</p>
+                    <button onclick="dodajDoKoszyka(${p.id})">Dodaj do koszyka</button>
+                </div>
+            `).join("");
+        }
+
+        async function dodajDoKoszyka(produkt_id) {
+            await fetch("/koszyk/", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({produkt_id, ilosc: 1, sesja_id: SESJA_ID})
+            });
+            alert("Dodano do koszyka!");
+        }
+
+        async function pokazKoszyk() {
+            const res = await fetch(`/koszyk/${SESJA_ID}`);
+            const koszyk = await res.json();
+            const div = document.getElementById("koszyk");
+            div.innerHTML = koszyk.map(p => `
+                <p>${p.nazwa} x${p.ilosc} - ${p.cena * p.ilosc} zł</p>
+            `).join("");
+        }
+
+        async function zlozZamowienie() {
+            const res = await fetch(`/zamowienia/${SESJA_ID}`, {method: "POST"});
+            const data = await res.json();
+            alert(data.message || data.error);
+            pokazKoszyk();
+        }
+
+        pobierzProdukty();
+    </script>
+</body>
+</html>
